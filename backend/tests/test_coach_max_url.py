@@ -15,7 +15,7 @@ import os
 import re
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
-SUPER_ADMIN_TOKEN = "REMOVED_TEST_TOKEN"
+SUPER_ADMIN_TOKEN = os.getenv("TEST_ADMIN_TOKEN", "")
 TEST_SUBMISSION_ID = "sub_demo_test"
 
 
