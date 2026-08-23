@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if [[ "${1:-}" != "api" ]]; then
+  echo "mock-gh-hierarchy supports only 'gh api'" >&2
+  exit 64
+fi
+shift
+
+endpoint=""
+for argument in "$@"; do
+  if [[ "$argument" == repos/* ]]; then
+    endpoint="$argument"
+    break
+  fi
+done
+
+printf '%s\t%s\n' "$endpoint" "$*" >> "${MOCK_GH_LOG:?}"
+
+child_number="${MOCK_CHILD_NUMBER:-23}"
+parent_number="${MOCK_PARENT_NUMBER:-22}"
+
+case "$endpoint" in
+  */issues/"${child_number}"/sub_issue)
+    if [[ -z "${MOCK_CURRENT_PARENT_NUMBER:-}" ]]; then
+      exit 1
+    fi
+    printf '{"id":900,"number":%s}\n' "$MOCK_CURRENT_PARENT_NUMBER"
+    ;;
+  */issues/"${parent_number}"/sub_issues)
+    if [[ "${MOCK_ADD_FAIL:-false}" == "true" ]]; then
+      exit 1
+    fi
+    printf '{}\n'
+    ;;
+  */issues/"${child_number}")
+    if [[ "${MOCK_CHILD_IS_PR:-false}" == "true" ]]; then
+      printf '{"id":100,"number":%s,"pull_request":{}}\n' "$child_number"
+    else
+      printf '{"id":100,"number":%s}\n' "$child_number"
+    fi
+    ;;
+  */issues/"${parent_number}")
+    parent_type="${MOCK_PARENT_TYPE:-Epic}"
+    if [[ "${MOCK_PARENT_IS_PR:-false}" == "true" ]]; then
+      printf '{"id":200,"number":%s,"body":"","pull_request":{}}\n' "$parent_number"
+    else
+      printf '{"id":200,"number":%s,"body":"<!-- coach-max-project -->\\n{\\"Issue Type\\":\\"%s\\"}\\n<!-- end-coach-max-project -->"}\n' "$parent_number" "$parent_type"
+    fi
+    ;;
+  *)
+    echo "Unexpected mock endpoint: ${endpoint}" >&2
+    exit 65
+    ;;
+esac

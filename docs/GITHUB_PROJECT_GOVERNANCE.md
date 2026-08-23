@@ -40,6 +40,32 @@ For one contributor, the work-in-progress limit is one `In Progress` issue. `In 
 
 Security is a cross-cutting concern, not an issue type. Use `security-sensitive` on the applicable issue type, and never publish exploitable details in a public repository.
 
+## Issue hierarchy policy
+
+GitHub's native parent/sub-issue relationship is the source of truth for work breakdown:
+
+```text
+Epic
+├── Feature
+│   ├── Task
+│   ├── Bug
+│   ├── Spike
+│   ├── Decision
+│   └── Documentation
+├── Decision
+└── Standalone leaf work
+```
+
+- Epics are hierarchy roots and do not declare a parent.
+- Features are direct children of an Epic.
+- Tasks, Bugs, Spikes, Decisions, and Documentation normally belong to a Feature, but small cross-cutting items may belong directly to an Epic.
+- An issue has one current parent. Changing `Parent Issue` intentionally reparents the issue.
+- Only actionable leaf issues receive development branches and pull requests.
+- Closing child issues updates GitHub's `Sub-issues progress`; Epic closure remains an explicit product decision.
+- Project views should expose the built-in `Parent issue` and `Sub-issues progress` fields rather than custom replacements.
+
+The `Issue Hierarchy` workflow reads `Parent Issue` from issue-form headings or the hidden Project metadata block. It accepts hierarchy changes only for repository-owner issues or actors with write-level access, validates the allowed Issue Type relationship, and synchronizes through GitHub's native sub-issue API. Repeated synchronization is idempotent.
+
 ## Workstream definitions
 
 | Workstream | Definition |
@@ -219,7 +245,7 @@ Issues generated through automation may include this hidden block. The Project w
 
 ```html
 <!-- coach-max-project -->
-{"Issue Type":"Task","Phase":"Phase 1","Workstream":"Tenancy","Priority":"P1","Estimate":5,"Start Date":"2026-09-14","Target Date":"2026-09-27","Release":"Tenant Ready","Risk":"High","Iteration":"Iteration 2"}
+{"Issue Type":"Task","Phase":"Phase 1","Workstream":"Tenancy","Priority":"P1","Estimate":5,"Start Date":"2026-09-06","Target Date":"2026-09-19","Release":"Tenant Ready","Risk":"High","Iteration":"Iteration 2","Parent Issue":142}
 <!-- end-coach-max-project -->
 ```
 
