@@ -250,3 +250,7 @@ Issues generated through automation may include this hidden block. The Project w
 ```
 
 Field and option names must match the GitHub Project exactly.
+
+Editing this metadata automatically refreshes the Project item without changing
+its current Status. `Estimate` is a non-negative number and may be fractional
+when the value represents focused human oversight for AI-assisted delivery.

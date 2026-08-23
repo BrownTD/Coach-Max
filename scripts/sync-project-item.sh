@@ -119,16 +119,22 @@ set_single_select_field() {
 }
 
 set_number_field() {
-  local name="$1" value="$2" id
+  local name="$1" value="$2" id query payload
   id="$(field_id "$name")"
   [[ -n "$id" ]] || { echo "Missing Project field: ${name}" >&2; return 1; }
-  gh api graphql --silent \
-    -f query='mutation($project: ID!, $item: ID!, $field: ID!, $value: Float!) {
+  query='mutation($project: ID!, $item: ID!, $field: ID!, $value: Float!) {
       updateProjectV2ItemFieldValue(input: {
         projectId: $project, itemId: $item, fieldId: $field, value: { number: $value }
       }) { projectV2Item { id } }
-    }' \
-    -f project="$project_id" -f item="$item_id" -f field="$id" -F value="$value"
+    }'
+  payload="$(jq -cn \
+    --arg query "$query" \
+    --arg project "$project_id" \
+    --arg item "$item_id" \
+    --arg field "$id" \
+    --argjson value "$value" \
+    '{query: $query, variables: {project: $project, item: $item, field: $field, value: $value}}')"
+  gh api graphql --silent --input - <<<"$payload"
 }
 
 set_date_field() {

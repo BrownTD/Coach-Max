@@ -95,6 +95,7 @@ write_body Task 22
 export MOCK_PARENT_TYPE=Feature
 export MOCK_CURRENT_PARENT_NUMBER=22
 expect_success "existing relationship is idempotent" "$script" 23 "${temporary_directory}/body.md"
+grep -q $'/issues/23/parent\t' "$MOCK_GH_LOG"
 ! grep -q '/issues/22/sub_issues' "$MOCK_GH_LOG"
 
 reset_case
