@@ -134,7 +134,7 @@ current_parent=""
 if current_parent_json="$(gh api \
   -H "Accept: application/vnd.github+json" \
   -H "X-GitHub-Api-Version: 2026-03-10" \
-  "repos/${REPOSITORY}/issues/${issue_number}/sub_issue" 2>/dev/null)"; then
+  "repos/${REPOSITORY}/issues/${issue_number}/parent" 2>/dev/null)"; then
   current_parent="$(jq -r '.number // empty' <<<"$current_parent_json")"
 fi
 
@@ -163,7 +163,7 @@ fi
 if current_parent_json="$(gh api \
   -H "Accept: application/vnd.github+json" \
   -H "X-GitHub-Api-Version: 2026-03-10" \
-  "repos/${REPOSITORY}/issues/${issue_number}/sub_issue" 2>/dev/null)"; then
+  "repos/${REPOSITORY}/issues/${issue_number}/parent" 2>/dev/null)"; then
   current_parent="$(jq -r '.number // empty' <<<"$current_parent_json")"
 fi
 if [[ "$current_parent" == "$parent_issue" ]]; then

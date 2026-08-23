@@ -22,7 +22,7 @@ child_number="${MOCK_CHILD_NUMBER:-23}"
 parent_number="${MOCK_PARENT_NUMBER:-22}"
 
 case "$endpoint" in
-  */issues/"${child_number}"/sub_issue)
+  */issues/"${child_number}"/parent)
     if [[ -z "${MOCK_CURRENT_PARENT_NUMBER:-}" ]]; then
       exit 1
     fi

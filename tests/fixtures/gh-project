@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+printf '%s\t%s\n' "${1:-}" "$*" >> "${MOCK_GH_LOG:?}"
+
+if [[ "${1:-}" != "api" ]]; then
+  echo "mock-gh-project supports only 'gh api'" >&2
+  exit 64
+fi
+shift
+
+endpoint="${1:-}"
+if [[ "$endpoint" == "graphql" ]]; then
+  input_payload=""
+  if [[ " $* " == *" --input - "* ]]; then
+    input_payload="$(cat)"
+    printf 'GRAPHQL_INPUT\t%s\n' "$input_payload" >> "$MOCK_GH_LOG"
+    printf '{"data":{"updateProjectV2ItemFieldValue":{"projectV2Item":{"id":"ITEM-1"}}}}\n'
+    exit 0
+  fi
+
+  arguments="$*"
+  if [[ "$arguments" == *'projectV2(number:'* ]]; then
+    printf '%s\n' '{"data":{"user":{"projectV2":{"id":"PROJECT-1","fields":{"nodes":[{"id":"FIELD-TICKET","name":"Ticket Key","dataType":"TEXT"},{"id":"FIELD-ESTIMATE","name":"Estimate","dataType":"NUMBER"}]}}}}}'
+  elif [[ "$arguments" == *'projectItems(first:'* ]]; then
+    printf '%s\n' '{"data":{"node":{"projectItems":{"nodes":[{"id":"ITEM-1","project":{"id":"PROJECT-1"}}]}}}}'
+  elif [[ "$arguments" == *'updateProjectV2ItemFieldValue'* ]]; then
+    printf '%s\n' '{"data":{"updateProjectV2ItemFieldValue":{"projectV2Item":{"id":"ITEM-1"}}}}'
+  else
+    echo "Unexpected mock GraphQL request: ${arguments}" >&2
+    exit 65
+  fi
+  exit 0
+fi
+
+if [[ "$endpoint" == repos/*/issues/* ]]; then
+  printf '%s\n' '{"node_id":"ISSUE-NODE-35","html_url":"https://github.com/BrownTD/Coach-Max/issues/35"}'
+  exit 0
+fi
+
+echo "Unexpected mock endpoint: ${endpoint}" >&2
+exit 65
