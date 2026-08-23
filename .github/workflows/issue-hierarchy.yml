@@ -1,0 +1,92 @@
+name: Issue Hierarchy
+
+"on":
+  issues:
+    types: [opened, edited, reopened, closed]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Issue number whose parent relationship should be refreshed
+        required: true
+        type: number
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: issue-hierarchy-${{ github.event.issue.number || inputs.issue_number || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: sync-issue-hierarchy
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+    steps:
+      - name: Resolve issue number
+        id: resolve
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_ISSUE_NUMBER: ${{ github.event.issue.number }}
+          INPUT_ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            issue_number="$INPUT_ISSUE_NUMBER"
+          else
+            issue_number="$EVENT_ISSUE_NUMBER"
+          fi
+          if [[ ! "$issue_number" =~ ^[1-9][0-9]*$ ]]; then
+            echo "Invalid issue number: ${issue_number}" >&2
+            exit 2
+          fi
+          echo "issue_number=${issue_number}" >> "$GITHUB_OUTPUT"
+
+      - name: Authorize hierarchy request
+        id: authorize
+        env:
+          ACTOR: ${{ github.actor }}
+          ISSUE_NUMBER: ${{ steps.resolve.outputs.issue_number }}
+        run: |
+          set -euo pipefail
+          repository_owner="${REPOSITORY%%/*}"
+          issue_author="$(gh api "repos/${REPOSITORY}/issues/${ISSUE_NUMBER}" --jq '.user.login')"
+          permission="$(gh api "repos/${REPOSITORY}/collaborators/${ACTOR}/permission" --jq '.permission' 2>/dev/null || true)"
+
+          allowed=false
+          if [[ "${issue_author,,}" == "${repository_owner,,}" ]]; then
+            allowed=true
+          fi
+          case "$permission" in
+            admin|maintain|write) allowed=true ;;
+          esac
+
+          if [[ "$allowed" != "true" ]]; then
+            echo "Hierarchy metadata from '${ACTOR}' is not authorized; synchronization skipped."
+          fi
+          echo "allowed=${allowed}" >> "$GITHUB_OUTPUT"
+
+      - name: Check out trusted automation from the default branch
+        if: steps.authorize.outputs.allowed == 'true'
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Fetch current issue body
+        if: steps.authorize.outputs.allowed == 'true'
+        env:
+          ISSUE_NUMBER: ${{ steps.resolve.outputs.issue_number }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${REPOSITORY}/issues/${ISSUE_NUMBER}" --jq '.body // ""' > /tmp/issue-body.md
+
+      - name: Synchronize parent relationship
+        if: steps.authorize.outputs.allowed == 'true'
+        env:
+          ISSUE_NUMBER: ${{ steps.resolve.outputs.issue_number }}
+        run: |
+          set -euo pipefail
+          ./scripts/sync-issue-hierarchy.sh "$ISSUE_NUMBER" /tmp/issue-body.md
