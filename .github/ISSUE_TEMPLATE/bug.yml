@@ -1,0 +1,67 @@
+name: Bug
+description: Report incorrect or regressed Coach Max behavior.
+title: ""
+labels: []
+assignees: [BrownTD]
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options: [Bug]
+    validations:
+      required: true
+  - type: dropdown
+    id: workstream
+    attributes:
+      label: Workstream
+      options: [Architecture, Tenancy, Identity, AI, Integrations, White Label, Billing, Operations, QA/Security, Documentation/Legal]
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options: [P0, P1, P2, P3]
+    validations:
+      required: true
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk
+      options: [High, Medium, Low]
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      placeholder: "1. ..."
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: "- [ ] Correct behavior is restored\n- [ ] A regression test covers the failure"
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Include sanitized logs, screenshots, or test failures. Do not include secrets or customer data.
+    validations:
+      required: false

@@ -1,0 +1,112 @@
+name: Product work item
+description: Create an epic, feature, task, spike, or documentation item.
+title: ""
+labels: []
+assignees: [BrownTD]
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options: [Epic, Feature, Task, Spike, Documentation]
+    validations:
+      required: true
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Phase
+      options: [Phase 0, Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Continuous]
+    validations:
+      required: true
+  - type: dropdown
+    id: workstream
+    attributes:
+      label: Workstream
+      options: [Architecture, Tenancy, Identity, AI, Integrations, White Label, Billing, Operations, QA/Security, Documentation/Legal]
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options: [P0, P1, P2, P3]
+    validations:
+      required: true
+  - type: dropdown
+    id: estimate
+    attributes:
+      label: Estimate
+      description: Hours of focused effort. Items above eight hours should normally be split.
+      options: ['1', '2', '3', '5', '8']
+    validations:
+      required: true
+  - type: dropdown
+    id: release
+    attributes:
+      label: Release
+      options: [Foundation, Tenant Ready, Identity Ready, AI Ready, Integration Ready, Paid Pilot, GA]
+    validations:
+      required: true
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk
+      options: [High, Medium, Low]
+    validations:
+      required: true
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: State the observable outcome, not the implementation activity.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Explain why the work is needed and reference the source analysis.
+    validations:
+      required: true
+  - type: textarea
+    id: requirements
+    attributes:
+      label: Requirements
+      placeholder: "- [ ] Detailed requirement"
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: "- [ ] Observable validation condition"
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      placeholder: "Blocked by, blocks, or None"
+    validations:
+      required: true
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+      description: Identify adjacent work that this issue will not deliver.
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation
+      description: List tests, commands, evidence, or review required before closure.
+    validations:
+      required: true
+  - type: dropdown
+    id: launch_gate
+    attributes:
+      label: Launch Gate
+      options: [Not a launch gate, Paid Pilot, GA]
+    validations:
+      required: true

@@ -1,0 +1,50 @@
+name: Ticket Policy
+
+"on":
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  validate:
+    name: ticket-policy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out trusted validation script
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Fetch pull-request metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}" > /tmp/pr.json
+          gh api --paginate "repos/${REPOSITORY}/pulls/${PR_NUMBER}/commits?per_page=100" \
+            --jq '.[].commit.message | split("\n")[0]' > /tmp/commit-subjects.txt
+          jq -r '.body // ""' /tmp/pr.json > /tmp/pr-body.md
+
+      - name: Validate ticket conventions
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          branch="$(jq -r '.head.ref' /tmp/pr.json)"
+          title="$(jq -r '.title' /tmp/pr.json)"
+          ./scripts/validate-ticket-policy.sh "$branch" "$title" /tmp/pr-body.md /tmp/commit-subjects.txt
+
+          issue_number="${branch#CMX-}"
+          issue_kind="$(gh api "repos/${REPOSITORY}/issues/${issue_number}" \
+            --jq 'if has("pull_request") then "pull_request" else .state end')"
+          if [[ "$issue_kind" != "open" ]]; then
+            echo "CMX-${issue_number} must reference an open issue, not '${issue_kind}'." >&2
+            exit 1
+          fi

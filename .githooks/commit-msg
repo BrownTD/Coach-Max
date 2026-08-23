@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+message_file="${1:?commit message file is required}"
+branch="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
+
+if [[ ! "$branch" =~ ^CMX-[1-9][0-9]*$ ]]; then
+  exit 0
+fi
+subject="$(head -n 1 "$message_file")"
+expected_prefix="${branch}: "
+
+if [[ "$subject" != "$expected_prefix"* ]] || [[ "$subject" == "$expected_prefix" ]]; then
+  cat >&2 <<EOF
+Invalid commit subject for branch ${branch}.
+
+Expected:
+  ${branch}: <short imperative summary>
+
+Received:
+  ${subject}
+EOF
+  exit 1
+fi
