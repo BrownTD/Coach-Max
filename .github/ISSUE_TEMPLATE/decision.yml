@@ -7,7 +7,7 @@ body:
   - type: dropdown
     id: type
     attributes:
-      label: Type
+      label: Issue Type
       options: [Decision]
     validations:
       required: true
