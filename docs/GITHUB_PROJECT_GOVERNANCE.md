@@ -28,7 +28,7 @@ For one contributor, the work-in-progress limit is one `In Progress` issue. `In 
 
 ## Issue type definitions
 
-| Type | Definition | Development branch |
+| Issue Type | Definition | Development branch |
 |---|---|---|
 | Epic | A phase- or release-level outcome containing multiple features or tasks. | No |
 | Feature | A customer or platform capability that may require multiple implementation tasks. | Normally no |
@@ -219,7 +219,7 @@ Issues generated through automation may include this hidden block. The Project w
 
 ```html
 <!-- coach-max-project -->
-{"Type":"Task","Phase":"Phase 1","Workstream":"Tenancy","Priority":"P1","Estimate":5,"Start Date":"2026-09-14","Target Date":"2026-09-27","Release":"Tenant Ready","Risk":"High","Iteration":"Iteration 2"}
+{"Issue Type":"Task","Phase":"Phase 1","Workstream":"Tenancy","Priority":"P1","Estimate":5,"Start Date":"2026-09-14","Target Date":"2026-09-27","Release":"Tenant Ready","Risk":"High","Iteration":"Iteration 2"}
 <!-- end-coach-max-project -->
 ```
 

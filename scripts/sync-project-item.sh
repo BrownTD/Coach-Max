@@ -199,7 +199,17 @@ if [[ -n "$status_value" ]]; then
   set_single_select_field "Status" "$status_value"
 fi
 
-for name in "Type" "Phase" "Workstream" "Priority" "Release" "Risk"; do
+issue_type="$(metadata_value "Issue Type")"
+if [[ -z "$issue_type" ]]; then
+  # Backward compatibility for issues generated before the Project field was
+  # standardized as "Issue Type".
+  issue_type="$(metadata_value "Type")"
+fi
+if [[ -n "$issue_type" && "$issue_type" != "Not set" ]]; then
+  set_single_select_field "Issue Type" "$issue_type"
+fi
+
+for name in "Phase" "Workstream" "Priority" "Release" "Risk"; do
   value="$(metadata_value "$name")"
   if [[ -n "$value" && "$value" != "Not set" ]]; then
     set_single_select_field "$name" "$value"
