@@ -1,0 +1,178 @@
+name: Project Automation
+
+"on":
+  issues:
+    types: [opened, reopened, closed]
+  create:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review, converted_to_draft, closed]
+  pull_request_review:
+    types: [submitted, dismissed]
+  workflow_run:
+    workflows: [Ticket Policy]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Issue number to add or refresh in the Project
+        required: true
+        type: number
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: project-sync-${{ github.event.issue.number || github.event.pull_request.number || github.event.workflow_run.id || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: sync-project
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+      PROJECT_OWNER: ${{ vars.PROJECT_OWNER || 'BrownTD' }}
+      PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER || '7' }}
+      REPOSITORY: ${{ github.repository }}
+    steps:
+      - name: Check out trusted automation from the default branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Resolve ticket and target status
+        id: resolve
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_ACTION: ${{ github.event.action }}
+          INPUT_ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: |
+          set -euo pipefail
+          issue_number=""
+          status=""
+
+          case "$EVENT_NAME" in
+            issues)
+              issue_number="$(jq -r '.issue.number' "$GITHUB_EVENT_PATH")"
+              case "$EVENT_ACTION" in
+                opened|reopened) status="Backlog" ;;
+                closed) status="Done" ;;
+              esac
+              ;;
+            create)
+              ref_type="$(jq -r '.ref_type' "$GITHUB_EVENT_PATH")"
+              ref="$(jq -r '.ref' "$GITHUB_EVENT_PATH")"
+              if [[ "$ref_type" == "branch" && "$ref" =~ ^CMX-([1-9][0-9]*)$ ]]; then
+                issue_number="${BASH_REMATCH[1]}"
+                status="In Progress"
+              fi
+              ;;
+            pull_request_target)
+              branch="$(jq -r '.pull_request.head.ref' "$GITHUB_EVENT_PATH")"
+              if [[ "$branch" =~ ^CMX-([1-9][0-9]*)$ ]]; then
+                issue_number="${BASH_REMATCH[1]}"
+                case "$EVENT_ACTION" in
+                  opened|reopened)
+                    if [[ "$(jq -r '.pull_request.draft' "$GITHUB_EVENT_PATH")" == "true" ]]; then
+                      status="In Progress"
+                    else
+                      status="In Review"
+                    fi
+                    ;;
+                  ready_for_review) status="In Review" ;;
+                  converted_to_draft) status="In Progress" ;;
+                  closed)
+                    if [[ "$(jq -r '.pull_request.merged' "$GITHUB_EVENT_PATH")" == "true" ]]; then
+                      status="Done"
+                    else
+                      status="In Progress"
+                    fi
+                    ;;
+                esac
+              fi
+              ;;
+            pull_request_review)
+              branch="$(jq -r '.pull_request.head.ref' "$GITHUB_EVENT_PATH")"
+              review_state="$(jq -r '.review.state' "$GITHUB_EVENT_PATH")"
+              if [[ "$branch" =~ ^CMX-([1-9][0-9]*)$ ]]; then
+                issue_number="${BASH_REMATCH[1]}"
+                case "$review_state" in
+                  approved) status="Ready to Merge" ;;
+                  changes_requested) status="In Progress" ;;
+                  *) status="In Review" ;;
+                esac
+              fi
+              ;;
+            workflow_run)
+              if [[ "$(jq -r '.workflow_run.conclusion' "$GITHUB_EVENT_PATH")" == "success" ]]; then
+                pr_number="$(jq -r '.workflow_run.pull_requests[0].number // empty' "$GITHUB_EVENT_PATH")"
+                if [[ -n "$pr_number" ]]; then
+                  branch="$(gh api "repos/${REPOSITORY}/pulls/${pr_number}" --jq '.head.ref')"
+                  if [[ "$branch" =~ ^CMX-([1-9][0-9]*)$ ]]; then
+                    issue_number="${BASH_REMATCH[1]}"
+                    status="Ready to Merge"
+                  fi
+                fi
+              fi
+              ;;
+            workflow_dispatch)
+              issue_number="$INPUT_ISSUE_NUMBER"
+              status="Backlog"
+              ;;
+          esac
+
+          if [[ -z "$issue_number" || -z "$status" ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "issue_number=${issue_number}" >> "$GITHUB_OUTPUT"
+          echo "status=${status}" >> "$GITHUB_OUTPUT"
+
+      - name: Normalize issue title
+        if: steps.resolve.outputs.skip == 'false' && github.event_name == 'issues' && (github.event.action == 'opened' || github.event.action == 'reopened')
+        env:
+          ISSUE_NUMBER: ${{ steps.resolve.outputs.issue_number }}
+        run: |
+          set -euo pipefail
+          current_title="$(gh api "repos/${REPOSITORY}/issues/${ISSUE_NUMBER}" --jq '.title')"
+          summary="$(sed -E 's/^CMX-[0-9]+:[[:space:]]*//' <<<"$current_title")"
+          expected="CMX-${ISSUE_NUMBER}: ${summary}"
+          if [[ "$current_title" != "$expected" ]]; then
+            gh issue edit "$ISSUE_NUMBER" --repo "$REPOSITORY" --title "$expected"
+          fi
+
+      - name: Synchronize launch-gate label
+        if: steps.resolve.outputs.skip == 'false' && github.event_name == 'issues'
+        env:
+          ISSUE_NUMBER: ${{ steps.resolve.outputs.issue_number }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${REPOSITORY}/issues/${ISSUE_NUMBER}" --jq '.body // ""' > /tmp/issue-body.md
+          launch_gate="$(awk '
+            $0 == "### Launch Gate" { capture = 1; next }
+            capture && /^### / { exit }
+            capture && $0 !~ /^[[:space:]]*$/ { print; exit }
+          ' /tmp/issue-body.md)"
+
+          if [[ "$launch_gate" == "Paid Pilot" || "$launch_gate" == "GA" ]]; then
+            if gh api "repos/${REPOSITORY}/labels/launch-gate" >/dev/null 2>&1; then
+              gh issue edit "$ISSUE_NUMBER" --repo "$REPOSITORY" --add-label launch-gate
+            else
+              echo "The launch-gate label does not exist; create it in repository settings." >&2
+            fi
+          fi
+
+      - name: Synchronize Project item
+        if: steps.resolve.outputs.skip == 'false'
+        env:
+          ISSUE_NUMBER: ${{ steps.resolve.outputs.issue_number }}
+          TARGET_STATUS: ${{ steps.resolve.outputs.status }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${REPOSITORY}/issues/${ISSUE_NUMBER}" --jq '.body // ""' > /tmp/issue-body.md
+          ./scripts/sync-project-item.sh "$ISSUE_NUMBER" "$TARGET_STATUS" /tmp/issue-body.md

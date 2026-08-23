@@ -1,0 +1,61 @@
+name: Decision
+description: Record a product, commercial, architecture, provider, or operational decision.
+title: ""
+labels: []
+assignees: [BrownTD]
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options: [Decision]
+    validations:
+      required: true
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Phase
+      options: [Phase 0, Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Continuous]
+    validations:
+      required: true
+  - type: dropdown
+    id: workstream
+    attributes:
+      label: Workstream
+      options: [Architecture, Tenancy, Identity, AI, Integrations, White Label, Billing, Operations, QA/Security, Documentation/Legal]
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Decision required
+      description: State the decision as a question with a bounded scope.
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints and decision drivers
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options considered
+      description: Include material alternatives and tradeoffs.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Proposed outcome
+      description: Leave as pending when more evidence is required.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: "- [ ] Decision is approved\n- [ ] Consequences and follow-up work are documented"
+    validations:
+      required: true
