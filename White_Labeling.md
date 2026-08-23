@@ -1,6 +1,8 @@
 # Coach Max White-Label Product Implementation Plan
 
 **Created:** 2026-08-22  
+**Strategy updated:** 2026-08-23 — adopt an Equip-derived native LMS and remove Thinkific as a launch runtime dependency
+
 **Target product:** Managed, white-label Coach Max platform for licensed organizational customers  
 **Recommended commercial model:** One-time onboarding fee plus annual subscription, included usage allowances, and paid add-ons  
 **Initial deployment model:** Dedicated deployment and database per organization, designed from the beginning for eventual shared multi-tenancy
@@ -14,8 +16,9 @@ The resulting product should allow an organization to:
 - Use its own name, domain, logo, colors, AI persona, terminology, and email identity.
 - Create administrators, instructors, students, cohorts, assignments, templates, and rubrics.
 - Operate independently with isolated data and credentials.
-- Use Coach Max with or without Thinkific.
-- Connect its own Thinkific site through an approved authorization flow.
+- Create, manage, deliver, and track courses inside Coach Max through an Equip-derived native LMS.
+- Import supported curriculum and learner records from Thinkific or structured files without requiring Thinkific after cutover.
+- Upload and securely deliver private course video through a managed video provider.
 - Receive continuous security, compatibility, and product updates.
 - Select an AI/data option appropriate to its contractual and privacy requirements.
 - View usage, plan limits, job status, and integration health.
@@ -35,7 +38,8 @@ Sell a twelve-month license to a managed, white-label deployment with:
 - Included AI, transcription, and audio credits.
 - Metered overages or credit top-ups.
 - Standard maintenance and product updates included.
-- Optional Thinkific, SSO, custom-domain, dedicated-infrastructure, and premium-support add-ons.
+- Native course authoring and delivery, with included or metered managed-video allowances.
+- Optional SSO, custom-domain, dedicated-infrastructure, content-migration, and premium-support add-ons.
 
 The license grants the customer a right to use the service during the subscription term. It does not transfer source ownership or responsibility for operating the platform.
 
@@ -68,7 +72,8 @@ Do not offer unlimited AI usage. Plans should include an understandable allowanc
 | Intended customer | Small program | Established organization | Large or regulated organization |
 | Branding | One brand | Full white label | Full white label and multiple brands if needed |
 | Domain | Platform subdomain | Custom domain | Custom domain and advanced routing |
-| Thinkific | Optional add-on | Included or add-on | Included with advanced support |
+| Native LMS | Included | Included | Included with migration and advanced controls |
+| Managed video | Starter allowance | Expanded allowance | Contracted allowance or customer-owned account |
 | AI allowance | Standard | Expanded | Contracted/custom |
 | Deployment | Managed dedicated or shared-ready | Managed dedicated | Dedicated environment/database |
 | Identity | Google/email | Google/Microsoft/OIDC | SAML/OIDC, domain controls, optional SCIM |
@@ -83,7 +88,7 @@ Final prices and included allowances must be validated through pilot sales and o
 For hosted customers:
 
 - Security fixes are mandatory and included.
-- Thinkific, identity-provider, browser, and AI compatibility updates are included.
+- Equip-derived LMS, video-provider, identity-provider, browser, and AI compatibility updates are included.
 - Bug fixes and standard product improvements are included.
 - Premium modules are purchased and activated through entitlements rather than downloaded.
 - Customer-specific development is scoped and billed separately.
@@ -103,16 +108,18 @@ Customer domain
     │
     ▼
 Dedicated Coach Max web/API deployment
-    ├── Dedicated MongoDB database and GridFS bucket
+    ├── Equip-derived React/TypeScript and FastAPI application foundation
+    ├── Dedicated PostgreSQL/Supabase-compatible database and object storage
     ├── Customer-specific identity configuration
-    ├── Customer-specific Thinkific connection
+    ├── Organization-scoped course, enrollment, progress, and assessment data
+    ├── Managed or customer-owned video-delivery connection
     ├── Customer-specific email domain/configuration
     ├── Customer-specific branding and policies
     ├── Vendor-managed or customer-owned AI connection
     └── Privacy-safe analytics configuration
 ```
 
-This matches the current application's global platform-settings and shared-library assumptions while providing strong organizational isolation.
+This converges the product on Equip's React/FastAPI/PostgreSQL model instead of translating its LMS code into the legacy MongoDB model. Existing Coach Max MongoDB/GridFS data is an interim migration source, not the target for new LMS records. A dedicated database and storage boundary per organization provides strong launch isolation while `organization_id` remains present for a future shared control plane.
 
 ### 3.2 Future shared-SaaS topology
 
@@ -302,7 +309,7 @@ Add `organization_id` to:
 - Tutor chats.
 - Audio cache.
 - Support tickets.
-- Thinkific progress/events.
+- Course enrollments, lesson progress, quiz attempts, assignment records, and migration mappings.
 - Platform/branding settings.
 
 All database repository functions must require organization context. Queries by public ID alone should be prohibited at the repository/service boundary.
@@ -482,85 +489,132 @@ Support two commercial modes:
 
 OpenAI's official documentation should be used when finalizing data controls and customer commitments: [OpenAI API data controls](https://developers.openai.com/api/docs/guides/your-data).
 
-## 8. Thinkific integration
+## 8. Equip-derived native LMS and course delivery
 
-Thinkific should be an optional LMS connector. Coach Max must operate standalone when no LMS is connected.
+Coach Max will adopt Equip's code as the starting point for native course content management and delivery. Thinkific is no longer a launch runtime dependency. A supported Thinkific export may be accepted as an onboarding migration source, but students, instructors, and administrators must be able to complete launch workflows entirely inside Coach Max after cutover.
 
-### 8.1 Connector abstraction
+### 8.1 Adoption and licensing boundary
+
+- Pin the initial import to Equip commit [`ae3a340455ba1db0b6b7ba9da5495385b840ec7d`](https://github.com/ArVaViT/equip/commit/ae3a340455ba1db0b6b7ba9da5495385b840ec7d).
+- Record imported paths and later upstream-derived changes so provenance remains auditable.
+- Preserve the Equip MIT copyright and license notice, plus every applicable dependency license, in the source distribution and third-party notices.
+- Remove Equip names, logos, domains, sample organizations, and customer-facing attribution from the product UI where the license permits; do not remove legally required notices.
+- Remove Bible-school-specific content, Scripture APIs, daily challenges, example data, and terminology unless an approved general-purpose capability depends on them.
+- Run dependency, secret, vulnerability, and license scans before imported code enters a release branch.
+- Treat later Equip updates as reviewed upstream changes, not automatic merges.
+
+The import is a source-code adoption, not a network integration with another operator. Coach Max owns and deploys the adapted code in each customer environment.
+
+### 8.2 Application convergence
+
+Use the Equip application foundation rather than copying individual screens into the legacy MongoDB architecture:
 
 ```text
-LMSConnector
-├── connect()
-├── disconnect()
-├── validate_connection()
-├── list_courses()
-├── list_enrollments()
-├── sync_students()
-├── refresh_progress()
-├── register_webhooks()
-├── remove_webhooks()
-└── process_event()
+Coach Max application
+├── Equip-derived React/TypeScript/Vite interface
+├── FastAPI domain and administration APIs
+├── PostgreSQL/Supabase-compatible persistence and row-level controls
+├── Object storage for PDFs, documents, images, and audio
+├── VideoProvider boundary for managed video
+└── Coach Max coaching, rubric, submission, and AI-feedback capabilities
 ```
 
-Implement:
+Convergence requirements:
 
-- `StandaloneConnector` for manual/CSV operation.
-- `ThinkificConnector` for connected customers.
-- A stable interface for future Canvas, Moodle, Kajabi, or other connectors.
+- Map Equip schools, users, courses, modules, chapters, content blocks, enrollments, progress, quizzes, and assignments to organization-scoped Coach Max domains.
+- Port Coach Max rubric, submission, instructor-review, AI-feedback, coaching, and usage-metering behavior into stable services rather than duplicating learner records.
+- Stop new LMS writes to the legacy MongoDB model once the native schema becomes authoritative.
+- Use deterministic, idempotent migrations with source identifiers, dry-run reports, checkpoints, and rollback instructions.
+- Resolve duplicate identities and courses explicitly; never merge records only because names or email addresses resemble one another.
+- Enforce enrollment and role authorization in the API and database. Authenticated-but-unenrolled users must not be able to read paid lesson content, answer keys, private files, or video tokens.
 
-### 8.2 Pilot/private integration
+### 8.3 Launch-native LMS scope
 
-For early private customers, support a customer-generated Thinkific API access token and subdomain if permitted by the customer's plan and use case.
+The January 1 v1 must provide:
 
-Requirements:
+- Organization-admin and instructor course creation, editing, publishing, and archiving.
+- Ordered modules/chapters and reusable text, image, PDF/file, audio, video, quiz, and assignment content blocks.
+- Student enrollment, course navigation, progress, completion, quiz attempts, assignment submission, and Coach Max feedback flows.
+- Private-file delivery through short-lived signed URLs.
+- A migration path for supported Thinkific exports and structured CSV/file imports.
+- Audit events for course publication, enrollment changes, content deletion, import, and administrative overrides.
 
-- Customer enters the token through a secure server-side form.
-- Credentials are encrypted and scoped to the organization.
-- Connection health and expiry are visible to the organization admin.
-- The UI supports credential replacement without developer involvement.
-- Synchronization is explicit, observable, and idempotent.
+Advanced certificates, live classrooms, commerce storefronts, broad SCORM/xAPI compatibility, a Thinkific marketplace app, and feature-for-feature Thinkific parity are outside the launch scope unless separately approved.
 
-Thinkific describes API access tokens as appropriate for private or one-off integrations: [Thinkific API access tokens](https://support.thinkific.com/hc/en-us/articles/360052415534-How-to-Create-API-Access-Tokens).
+### 8.4 Managed-video provider boundary
 
-### 8.3 Scalable/public integration
+Use a small internal contract so course records are not coupled to Cloudflare:
 
-For a distributable Thinkific app:
+```text
+VideoProvider
+├── create_upload()
+├── get_status()
+├── create_playback_token()
+├── delete_video()
+├── process_webhook()
+├── get_usage()
+└── health_check()
+```
 
-1. Ask for the customer's Thinkific subdomain.
-2. Redirect the organization admin through Thinkific OAuth.
-3. Exchange the authorization code server-side.
-4. Encrypt and store tokens under the organization connection.
-5. Request only the scopes required for courses, users, enrollments, progress, and webhooks.
-6. Register organization-specific webhooks.
-7. Map external site, course, enrollment, and user identifiers to the organization.
-8. Refresh credentials securely.
-9. Remove webhooks and revoke/disable the connection on uninstall.
-10. Stop synchronization without disabling standalone Coach Max functionality.
+Cloudflare Stream is the recommended launch implementation, subject to the Phase 4 architecture proof. The backend creates a one-time direct-upload URL; the browser uploads the video directly to Stream; a signed webhook moves the video from processing to ready or error; Coach Max stores the returned video UID and ownership metadata; and an authorized learner receives a short-lived signed playback token. API tokens and signing keys remain server-only.
+
+Implementation requirements:
+
+- Use resumable `tus` uploads for files over 200 MB or unreliable connections and basic direct uploads only for smaller reliable uploads.
+- Make paid course video private by default with signed playback and allowed-origin restrictions.
+- Validate the learner's organization, enrollment, course publication state, and content entitlement before issuing a token.
+- Verify `Webhook-Signature` over the exact raw body with HMAC-SHA256, reject stale timestamps, compare in constant time, and make processing idempotent.
+- Store organization/deployment ID, course/content ID, provider UID, duration, state, creator, and deletion state without persisting one-time upload URLs.
+- Expose processing failure, retry/re-upload, orphan cleanup, provider health, and deletion controls to authorized administrators.
+- Track stored and delivered minutes by organization for plan allowances, cost reporting, anomaly alerts, and safe suspension.
+- Prevent browser preloading where it is not needed because prefetched video segments count as delivered usage.
 
 References:
 
-- [Thinkific OAuth](https://developers.thinkific.com/api/oauth/)
-- [Thinkific app scopes and information security](https://support.thinkific.com/hc/en-us/articles/4791175034647-Apps-and-Information-Security)
+- [Cloudflare Stream pricing](https://developers.cloudflare.com/stream/pricing/)
+- [Cloudflare Stream direct creator uploads](https://developers.cloudflare.com/stream/uploading-videos/direct-creator-uploads/)
+- [Cloudflare Stream signed playback](https://developers.cloudflare.com/stream/viewing-videos/securing-your-stream/)
+- [Cloudflare Stream webhooks](https://developers.cloudflare.com/stream/manage-video-library/using-webhooks/)
 
-### 8.4 Webhook handling
+### 8.5 Cloudflare Stream cost model
 
-- Authenticate webhook deliveries using the mechanism supported by the finalized Thinkific app configuration.
-- Use organization-specific connection/webhook identifiers.
-- Persist delivery IDs and reject replays.
-- Validate event type and schema.
-- Treat payloads as notifications and re-fetch canonical data when appropriate.
-- Process events through a durable queue.
-- Expose delivery failures and last successful event time.
-- Ensure one organization's event cannot resolve to another organization's users or courses.
+Cloudflare's public Stream rate is `$5 per 1,000 stored video minutes` and `$1 per 1,000 delivered video minutes`. Upload, encoding, bandwidth, and egress are included. Storage is prepaid in 1,000-minute increments; delivery is post-paid based on video segments delivered, including client preloading and buffering.
 
-### 8.5 Thinkific acceptance criteria
+Use this planning formula:
 
-- An organization admin can connect and disconnect without developer access.
-- Credentials are never global environment variables.
-- Two organizations can connect different Thinkific sites without data crossover.
-- Uninstall immediately stops access and webhook processing.
-- Resynchronization is idempotent.
-- The application remains usable without Thinkific.
+```text
+monthly Stream cost
+  = ceil(total stored minutes / 1,000) × $5
+  + total delivered minutes / 1,000 × $1
+```
+
+Illustrative steady-state costs, before tax or negotiated volume pricing:
+
+| Scenario | Stored library | Monthly viewing | Estimated Stream cost |
+|---|---:|---:|---:|
+| Small pilot | 20 hours / 1,200 minutes | 50 learners × 2 hours = 6,000 minutes | $10 storage + $6 delivery = **$16/month** |
+| Growing customer | 100 hours / 6,000 minutes | 100 learners × 4 hours = 24,000 minutes | $30 storage + $24 delivery = **$54/month** |
+| Larger program | 250 hours / 15,000 minutes | 500 learners × 5 hours = 150,000 minutes | $75 storage + $150 delivery = **$225/month** |
+
+Plans should include a video allowance and enforce a soft warning plus a contractual overage or hard cap. Treat these figures as cost inputs, not final customer pricing, and revalidate them before the paid pilot.
+
+### 8.6 Thinkific migration boundary
+
+- Do not build Thinkific OAuth, continuous synchronization, or a required customer Thinkific connection for launch.
+- Offer a documented, operator-assisted importer only when a design partner needs it and a lawful export provides the required data.
+- Maintain immutable source-to-target mappings and a sanitized reconciliation report.
+- Define which assets, quizzes, progress, certificates, and timestamps can and cannot be preserved before migration begins.
+- Do not scrape Thinkific or promise migration fidelity beyond its supported export/API and customer contract.
+- Disconnect and remove migration credentials immediately after the approved import window.
+
+### 8.7 Native LMS acceptance criteria
+
+- A customer can create, publish, enroll in, consume, assess, and complete a course without a Thinkific account.
+- Course content and private assets are denied across organization and enrollment boundaries.
+- Equip-derived code retains required notices and contains no customer-facing Equip branding or domain dependencies.
+- Supported content and learner records can be imported idempotently with a reconciliation report.
+- Video creators upload without receiving Cloudflare credentials, and only authorized learners receive short-lived playback access.
+- Video processing, cost, failure, deletion, and provider health are observable by organization.
 
 ## 9. PostHog and product analytics
 
@@ -657,8 +711,8 @@ Signed contract or checkout
     → Complete branding wizard
     → Verify email domain
     → Connect identity provider
-    → Connect Thinkific or choose standalone
-    → Import curriculum/users
+    → Provision native LMS and managed-video configuration
+    → Import curriculum/users from approved files or migration sources
     → Configure AI policy and allowance
     → Run readiness checks
     → Launch pilot cohort
@@ -673,9 +727,9 @@ The organization owner should be guided through:
 3. Domain setup.
 4. Email setup.
 5. Administrator and instructor invitations.
-6. Thinkific connection or standalone selection.
-7. Course/cohort mapping.
-8. Curriculum, assignment-template, and rubric import.
+6. Native LMS and managed-video readiness.
+7. Course/cohort mapping and publication defaults.
+8. Curriculum, assignment-template, rubric, and supported legacy-data import.
 9. AI policy and feedback approval mode.
 10. Data retention and privacy settings.
 11. Test student and sample submission.
@@ -706,7 +760,11 @@ Features should be controlled server-side through entitlements, not hidden only 
 Example feature keys:
 
 ```text
-thinkific_connector
+native_course_authoring
+managed_video
+video_storage_minutes
+video_delivery_minutes
+legacy_content_import
 custom_domain
 custom_email_domain
 ai_review
@@ -755,7 +813,8 @@ Premium capabilities should be activated through subscription changes and entitl
 
 Examples:
 
-- Thinkific integration.
+- Expanded managed-video allowance.
+- Operator-assisted legacy-content migration.
 - Advanced Coach Max insights.
 - SSO.
 - Dedicated infrastructure.
@@ -775,11 +834,12 @@ Replace detached in-process tasks and per-worker scheduling with durable infrast
 - Audio/video transcription.
 - TTS generation.
 - Email delivery.
-- Thinkific synchronization.
+- Course/content migration and reconciliation.
+- Video upload-status and deletion processing.
 - Webhook processing.
 - Weekly digest generation.
 - Data export/deletion.
-- GridFS orphan cleanup.
+- Object-storage and video-provider orphan cleanup.
 - Usage aggregation and invoice preparation.
 
 ### 13.2 Job requirements
@@ -855,9 +915,10 @@ Replace detached in-process tasks and per-worker scheduling with durable infrast
 #### Integration tests
 
 - Identity provider.
-- MongoDB/GridFS.
+- PostgreSQL/Supabase-compatible persistence, object storage, and row-level access controls.
 - AI provider contract.
-- Thinkific OAuth/sync/webhook lifecycle.
+- Equip-derived course, enrollment, progress, quiz, assignment, and migration lifecycle.
+- Cloudflare Stream upload, signed playback, webhook, usage, and deletion lifecycle.
 - Email provider.
 - Billing provider.
 - Queue workers.
@@ -868,7 +929,8 @@ Replace detached in-process tasks and per-worker scheduling with durable infrast
 - Owner onboarding.
 - White-label domain and branding.
 - Instructor/student invitations.
-- Thinkific connection and sync.
+- Native course authoring, enrollment, delivery, progress, quiz, and assignment completion.
+- Private video upload, processing, authorized playback, and denial for an unenrolled learner.
 - Assignment submission through feedback delivery.
 - Usage limit and overage behavior.
 - Cross-organization denial.
@@ -908,7 +970,8 @@ A release cannot ship unless CI passes:
 - Product overview and plan comparison.
 - Organization-owner onboarding guide.
 - Instructor and student guides.
-- Thinkific connection guide.
+- Native course administration and content-migration guide.
+- Managed-video usage, privacy, cost, and troubleshooting guide.
 - Data-processing and AI disclosure.
 - Privacy policy and Terms of Service.
 - Support policy and SLA where applicable.
@@ -1011,22 +1074,25 @@ Exit criteria:
 - Usage and cost are attributable to an organization.
 - Limits and failure handling are verified.
 
-### Phase 4 — Integration productization
+### Phase 4 — Equip LMS adoption and delivery integrations
 
 Deliverables:
 
-- LMS connector interface and standalone connector.
-- Thinkific private-token pilot connection.
-- Thinkific OAuth application path.
-- Secure webhook and sync processing.
+- Pinned Equip source adoption with MIT provenance and third-party license notices.
+- Equip-specific branding and vertical content removed from the customer experience.
+- Organization-scoped native course, enrollment, progress, quiz, assignment, and private-file delivery.
+- Deterministic import and cutover from supported Coach Max/Thinkific source data.
+- Cloudflare Stream proof, direct uploads, private playback, secure webhook processing, and usage metering behind `VideoProvider`.
 - Email provider abstraction and verified-domain workflow.
 - Configurable, event-only PostHog integration with replay disabled.
 
 Exit criteria:
 
-- Organizations connect/disconnect integrations without engineering access.
+- Customers create, deliver, assess, and complete courses without Thinkific.
+- Imported code and dependencies pass provenance, license, secret, vulnerability, and build checks.
+- Paid content and video are inaccessible across organization and enrollment boundaries.
 - Integration credentials are tenant-scoped and encrypted.
-- Standalone operation works without Thinkific or PostHog.
+- Core operation works without Thinkific or PostHog.
 
 ### Phase 5 — Onboarding, plans, and billing
 
@@ -1069,8 +1135,8 @@ Run two or three design-partner organizations through:
 - Contract and onboarding.
 - Branding and domain setup.
 - Identity setup.
-- Thinkific or standalone setup.
-- Curriculum migration.
+- Native LMS and managed-video setup.
+- Curriculum migration and reconciliation.
 - Instructor training.
 - A real pilot cohort.
 - Usage/margin review.
@@ -1118,7 +1184,7 @@ Exit criteria:
 
 - Define identity-provider interface.
 - Define AI-provider interface.
-- Define LMS-connector interface.
+- Define video-provider interface.
 - Define email-provider interface.
 - Define analytics-provider interface.
 - Move existing integration calls behind adapters.
@@ -1156,7 +1222,10 @@ The white-label product is ready for paid pilot only when:
 - [ ] Direct AI functionality covers review, chat, vision, transcription, insights, and TTS.
 - [ ] AI usage is metered and enforceable per organization.
 - [ ] All branding and generated links come from organization configuration.
-- [ ] Thinkific is optional and credentials are organization-scoped.
+- [ ] Native course authoring, delivery, assessment, and progress work without Thinkific.
+- [ ] Equip-derived code retains required license notices and has no customer-facing Equip branding or vertical-specific dependency.
+- [ ] Course content, files, answer keys, and video playback are protected by organization, role, enrollment, and publication state.
+- [ ] Managed-video credentials are server-only; upload and processing webhooks are authenticated, idempotent, observable, and metered.
 - [ ] PostHog replay is disabled and event capture follows an approved schema.
 - [ ] Email domains, templates, delivery tracking, and organization branding work.
 - [ ] Provisioning does not require manual database edits.
@@ -1182,7 +1251,10 @@ General availability additionally requires:
 | Customer-specific source forks | Make customization configuration-driven; prohibit unsupported forks. |
 | AI cost volatility | Meter every call, include allowances, set limits, support provider/model configuration. |
 | Dedicated-deployment overhead | Automate provisioning, configuration, migrations, monitoring, and releases. |
-| Thinkific API/app changes | Isolate behind a connector, include compatibility updates, monitor health/changelog. |
+| Equip provenance or upstream change | Pin the imported commit, preserve MIT and dependency notices, scan before import, and cherry-pick later upstream changes only after review. |
+| Paid-content exposure | Enforce API authorization and database row-level controls for organization, role, enrollment, publication, private assets, and video tokens. |
+| Cloudflare Stream cost or lock-in | Keep a narrow `VideoProvider` boundary, meter stored/delivered minutes, set plan limits, and retain export/delete procedures. |
+| Incomplete Thinkific migration | Define supported exports and exclusions, run dry runs, preserve source mappings, reconcile counts, and obtain customer sign-off. |
 | Identity-provider lock-in | Use standard OIDC/SAML concepts behind an adapter. |
 | Cross-organization exposure | Organization-scoped repositories, authorization policies, and exhaustive isolation tests. |
 | Version fragmentation | Managed release channels and a defined support window; no customer source branches. |
@@ -1201,7 +1273,9 @@ Track:
 - Active learners and submission completion.
 - Median submission-to-feedback time.
 - AI review failure/retry rate.
-- Thinkific synchronization success rate.
+- Course import reconciliation and failure rate.
+- Video upload/processing/playback failure rate.
+- Stored and delivered video minutes and cost per active learner.
 - Email delivery success rate.
 - Support tickets per organization and active learner.
 - Infrastructure and AI cost per active learner.
@@ -1221,14 +1295,15 @@ Track:
 6. Implement the organization boundary and isolation tests first.
 7. Replace Emergent authentication.
 8. Replace Emergent AI services and introduce usage metering.
-9. Productize Thinkific, email, and analytics connections.
-10. Build onboarding, entitlements, provisioning, and managed releases.
-11. Launch a tightly controlled paid pilot before committing to shared multi-tenancy.
+9. Adopt and deverticalize the pinned Equip baseline, converge Coach Max learning workflows, and secure paid course content.
+10. Integrate managed video, email, and privacy-conscious analytics with usage and health controls.
+11. Build onboarding, entitlements, provisioning, and managed releases.
+12. Launch a tightly controlled paid pilot before committing to shared multi-tenancy.
 
 ## Final recommendation
 
 Coach Max should launch as a **managed annual-subscription white-label product with a one-time onboarding fee**, not as a one-time downloadable platform purchase.
 
-Dedicated customer deployments provide the fastest path from the existing architecture to credible organizational licensing. Adding an organization boundary now preserves the option to consolidate deployments into a shared SaaS platform later. Emergent authentication and AI should be replaced through standards-based provider adapters, while Thinkific, PostHog, email, and future integrations should become optional, organization-scoped connectors.
+Dedicated customer deployments provide the fastest path from the current code to credible organizational licensing. Equip's MIT-licensed React/FastAPI/PostgreSQL LMS should become the native course-management and delivery foundation, with Coach Max coaching and AI workflows converged into it and Thinkific retained only as a supported migration source where needed. Adding an organization boundary now preserves the option to consolidate deployments into a shared SaaS platform later. Emergent authentication and AI should be replaced through standards-based provider adapters, while managed video, PostHog, email, and future integrations remain optional, organization-scoped services.
 
 The commercial and technical strategy should remain aligned: recurring operating costs are covered by recurring revenue; usage-heavy services are metered; standard updates are centrally managed and included; premium capabilities are activated through entitlements; and bespoke customer needs are delivered through configuration or paid services rather than customer-specific forks.

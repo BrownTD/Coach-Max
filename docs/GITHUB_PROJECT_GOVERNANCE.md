@@ -74,7 +74,7 @@ The `Issue Hierarchy` workflow reads `Parent Issue` from issue-form headings or 
 | Tenancy | Organizations, memberships, tenant context, isolation, domains, configuration, auditing, and tenant-scoped data. |
 | Identity | Authentication, authorization, sessions, invitations, roles, OIDC, SAML boundaries, and operator separation. |
 | AI | AI provider abstraction, prompts, feedback, vision, transcription, TTS, metering, budgets, safety, and provider failures. |
-| Integrations | Thinkific, PostHog, email, webhooks, connector interfaces, synchronization, and third-party credentials. |
+| Integrations | Managed video, PostHog, email, webhooks, provider interfaces, content migration, usage, and third-party credentials. |
 | White Label | Branding, domains, terminology, organization configuration, email identity, AI persona, and administration. |
 | Billing | Subscriptions, plans, entitlements, usage tracking, invoices, overages, credits, and premium add-ons. |
 | Operations | CI/CD, deployment, jobs, monitoring, alerts, backups, restore, upgrades, rollback, offboarding, and support tooling. |
@@ -89,7 +89,7 @@ The `Issue Hierarchy` workflow reads `Parent Issue` from issue-form headings or 
 | Tenant Ready | Organization boundaries, isolation, configuration, branding, domains, memberships, and tenant authorization are operational. |
 | Identity Ready | Emergent authentication has been replaced and organization identity, sessions, invitations, and roles work end to end. |
 | AI Ready | Emergent AI services have been replaced, core workflows retain parity, and organization usage can be measured and limited. |
-| Integration Ready | Thinkific, PostHog, email, and other services operate through optional, tenant-scoped connectors. |
+| Integration Ready | The Equip-derived native LMS, managed video, PostHog, email, and other launch services operate through tenant-scoped boundaries. |
 | Paid Pilot | Onboarding, pilot-critical billing and operations, and a constrained production deployment are ready for design-partner use. |
 | GA | All launch gates pass and provisioning, upgrades, billing, support, renewals, and offboarding are repeatable. |
 
@@ -139,7 +139,7 @@ This schedule delivers a minimum licensable white-label v1 using dedicated custo
 | Tenant Ready | Dedicated-deployment organization configuration, branding, scoped credentials, and removal of material hard-coded customer values. | 18 | 2026-10-05 |
 | Identity Ready | Emergent authentication replaced for the launch flows, secure sessions, roles, and organization access checks. | 12 | 2026-10-19 |
 | AI Ready | Launch-critical AI workflows use a direct provider adapter with limits, attribution, and failure handling. | 12 | 2026-11-02 |
-| Integration Ready | Thinkific private-token pilot connection, tenant-scoped email, and privacy-conscious PostHog events work for the launch configuration. | 12 | 2026-11-16 |
+| Integration Ready | The pinned Equip baseline is deverticalized into a native LMS; paid course content and managed video are protected; tenant-scoped email and privacy-conscious PostHog events work for the launch configuration. | 12 | 2026-11-16 |
 | Paid Pilot | One design partner can be provisioned, branded, trained, supported, backed up, and operated using documented manual runbooks. | 12 | 2026-12-01 |
 | GA | Launch gates, regression tests, security review, deployment/rollback validation, customer documentation, licensing terms, and release hardening pass. | 27 | 2027-01-01 |
 | **Total** | **Minimum licensable dedicated-deployment v1** | **105** | **2027-01-01** |
@@ -164,7 +164,8 @@ Plan at most 8-10 of the 12 nominal hours in each full iteration. The remaining 
 
 - Shared-database multi-tenancy; v1 uses a dedicated deployment and database per customer.
 - Multiple brands within one customer deployment.
-- Public Thinkific OAuth marketplace distribution; v1 uses a private-token connection.
+- Thinkific OAuth, continuous synchronization, and marketplace distribution; v1 may use an operator-assisted import from a supported customer export but has no Thinkific runtime dependency.
+- Feature-for-feature Thinkific parity, advanced certificates, live classrooms, commerce storefronts, and broad SCORM/xAPI support.
 - Customer-owned AI credentials and multi-provider selection; v1 uses the approved vendor-managed provider.
 - Enterprise SAML and advanced identity-provider administration beyond the launch authentication flow.
 - Self-service checkout, automated invoicing, and complex usage overages; v1 uses contracts and manual billing operations.
