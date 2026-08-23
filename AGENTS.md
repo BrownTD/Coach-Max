@@ -56,7 +56,7 @@ Epic
 
 ## Every Coach Max issue field
 
-Every applicable field must be filled. A field may remain blank only when the rules below explicitly make it inapplicable, derived, or automatically populated. Never omit a field merely because its value requires investigation.
+Every applicable managed field must be filled. A field may remain blank only when the rules below explicitly make it inapplicable, derived, automatically populated, or intentionally unmanaged. Never omit a managed field merely because its value requires investigation. `Team` and `Quarter` are the only intentionally unmanaged Project fields.
 
 ### Native issue content and relationships
 
@@ -110,8 +110,8 @@ Bugs must additionally include observed behavior, expected behavior, reproducibl
 | Iteration | Required for scheduled actionable leaves. Backlog leaves may be unassigned; Epics and Features normally remain unassigned. Use the exact current Project iteration title. |
 | Release | Required for every roadmap issue. Use exactly `Foundation`, `Tenant Ready`, `Identity Ready`, `AI Ready`, `Integration Ready`, `Paid Pilot`, or `GA`. |
 | Risk | Required. Use exactly `High`, `Medium`, or `Low` based on impact, not effort. |
-| Team | Populate whenever a configured Team option owns the work. Inspect current options first. Leave blank only when no Team option applies; do not invent an option. |
-| Quarter | Populate when quarter planning applies and an exact configured option exists. Derive it from the approved Target Date, then verify it. |
+| Team | Intentionally unmanaged. Do not read, populate, clear, synchronize, or validate this field. |
+| Quarter | Intentionally unmanaged. Do not read, populate, clear, synchronize, or validate this field. |
 | Parent issue | Automatically reflects the native parent relationship. Verify it for every Feature and leaf. |
 | Sub-issues progress | Automatically calculated for Epics and Features. Do not set it manually; verify it after hierarchy changes. |
 | Repository | Automatically populated. Verify that the item belongs to `BrownTD/Coach-Max`. |
@@ -134,6 +134,7 @@ Use this exact shape, omitting only fields that are inapplicable under the rules
 
 - Use JSON numbers, not strings, for `Estimate` and `Parent Issue`.
 - Dates use ISO `YYYY-MM-DD`.
+- Never include `Team` or `Quarter`; both fields are intentionally unmanaged.
 - Do not put unsupported or guessed option values in metadata.
 - Project-native or computed fields may be absent from metadata, but must still be verified after synchronization.
 
