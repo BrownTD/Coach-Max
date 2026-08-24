@@ -144,6 +144,10 @@ changed commit `e737ab2dac277704019f4f4332af95682ad89030` so it can determine wh
 server-side references and caches can be dereferenced or purged. No secret value
 is required in the public issue or support-request description.
 
+The cleanup request was submitted to GitHub Support on 2026-08-24 as ticket
+`#4695529`. CMX-3 remains open until Support confirms that the affected pull-request
+references and cached views have been purged or provides a final disposition.
+
 ## Public fork and clone limitation
 
 Rewriting `BrownTD/Coach-Max` cannot alter `slewis-cmd/Coach-Max`, another user's
