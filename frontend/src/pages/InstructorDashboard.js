@@ -32,7 +32,7 @@ export default function InstructorDashboard() {
     setSendingDigest(true);
     try {
       await axios.post(`${API_URL}/api/admin/send-weekly-digest`);
-      toast.success('Weekly digest is being generated and sent to info@theboostpad.org');
+      toast.success('Weekly digest is being generated for the configured recipient');
     } catch (_e) {
       toast.error('Failed to send digest');
     } finally {

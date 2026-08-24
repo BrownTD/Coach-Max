@@ -102,7 +102,7 @@ Bugs must additionally include observed behavior, expected behavior, reproducibl
 | Ticket Key | Required and derived as `CMX-<issue-number>` by automation. Verify it after synchronization. |
 | Issue Type | Required. Use exactly `Epic`, `Feature`, `Task`, `Bug`, `Spike`, `Decision`, or `Documentation`. |
 | Phase | Required. Use exactly one configured option: `Phase 0` through `Phase 8`, or `Continuous`. |
-| Workstream | Required. Use exactly `Architecture`, `Tenancy`, `Identity`, `AI`, `Integrations`, `White Label`, `Billing`, `Operations`, `QA/Security`, or `Documentation/Legal`. |
+| Workstream | Required. Use exactly `Architecture`, `Tenancy`, `Identity`, `AI`, `Integrations`, `White Label`, `Billing`, `Operations`, `QA / Security`, or `Documentation/Legal`. |
 | Priority | Required. Use exactly `P0`, `P1`, `P2`, or `P3`. |
 | Estimate | Required for actionable leaves. Use a non-negative number of focused GPT-5.6 Sol-assisted human hours; fractional values are allowed. For parents, omit it when child rollups represent the work unless governance establishes an explicit parent estimate. |
 | Start Date | Required for scheduled actionable leaves. Populate parents only when roadmap dates are intentionally maintained for the parent. Use `YYYY-MM-DD`. |

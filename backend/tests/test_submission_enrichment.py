@@ -55,12 +55,13 @@ def _run(coro_factory):
 # ---------------------------------------------------------------------------
 @pytest.fixture(scope="module")
 def super_admin_token():
-    """Seed a session token in `user_sessions` for slewis@theboostpad.org."""
+    """Seed a session token for the configured synthetic test administrator."""
     token = f"{TEST_PREFIX}_{uuid.uuid4().hex}"
     expires = datetime.now(timezone.utc) + timedelta(hours=2)
+    super_admin_email = os.environ.get("SUPER_ADMIN_EMAIL", "admin@example.test")
 
     async def _seed(db):
-        user = await db.users.find_one({"email": "slewis@theboostpad.org"}, {"_id": 0})
+        user = await db.users.find_one({"email": super_admin_email}, {"_id": 0})
         assert user, "Super admin user must exist in DB"
         await db.user_sessions.insert_one({
             "session_token": token,

@@ -19,7 +19,7 @@ import uuid
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
 DB_NAME = os.environ.get('DB_NAME', 'test_database')
-SUPER_ADMIN_EMAIL = "slewis@theboostpad.org"
+SUPER_ADMIN_EMAIL = os.environ.get("SUPER_ADMIN_EMAIL", "admin@example.test")
 
 # MongoDB connection
 mongo_client = MongoClient(MONGO_URL)

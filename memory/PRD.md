@@ -9,7 +9,7 @@ Build an AI tutor for Thinkific LMS Platform for a cohort learning environment. 
 - **Feedback Style**: 3 bullet points on what was done well + 3 bullet points on areas for improvement
 - **User Roles**: Super Admin > Instructor > Student
 - **Authentication**: Emergent-managed Google Auth
-- **Super Admin Email**: slewis@theboostpad.org
+- **Super Admin Email**: configured with `SUPER_ADMIN_EMAIL`
 - **AI Tutor Name**: Coach Max
 
 ## Architecture
@@ -167,7 +167,7 @@ Build an AI tutor for Thinkific LMS Platform for a cohort learning environment. 
 - [x] Tested: AI review references Week 1 in Week 2 feedback, Coach Max answers growth questions
 
 ### Weekly Coach Max Digest Email (April 9, 2026)
-- [x] Automated weekly email to info@theboostpad.org every Monday 9 AM UTC
+- [x] Automated weekly email to the configured notification recipient every Monday 9 AM UTC
 - [x] Includes AI-generated summary of student questions per cohort
 - [x] Grouped by week with example questions and question counts
 - [x] "Send Weekly Digest" manual trigger button on Instructor Dashboard
@@ -610,7 +610,7 @@ Follow-up work needed to complete the vision:
 - [x] Material Library — Central library for workbooks/case studies/homework, linked across cohorts
 - [x] Assign Instructor to Cohort — Super admin can reassign cohorts to different instructors
 - [x] Multiple Instructors per Cohort — instructor_ids array, multi-select in dialog
-- [x] Email routing — All system emails sent from and to info@theboostpad.org
+- [x] Email routing — System sender and notification recipients are deployment configuration
 - [x] Delete Cohorts — Admin dashboard cohort management with delete
 - [x] Library Homework — Students can submit homework against library materials
 - [x] Boost Pad Branding — Full rebrand with #22438E/#7CBAE6/#1A75BA/#E1F0FF palette, Montserrat/Lato fonts

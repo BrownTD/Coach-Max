@@ -31,6 +31,11 @@ dist/
 dist
 
 # Environment files (comprehensive coverage)
+.env
+.env.*
+*.env
+!.env.example
+!**/.env.example
 
 *token.json*
 *credentials.json*
@@ -64,6 +69,16 @@ chainlit.md
 # Data and databases
 agenthub/agents/youtube/db
 
+# Runtime uploads and generated test output must never be committed.
+/backend/uploads/**
+!/backend/uploads/.gitkeep
+/test_reports/**
+!/test_reports/.gitkeep
+
+# Local security testing notes may contain reusable authentication material.
+/auth_testing.md
+/memory/test_credentials.md
+
 # Archive files and large assets
 **/*.zip
 **/*.tar.gz
@@ -78,9 +93,6 @@ agenthub/agents/youtube/db
 
 # Mobile development
 android-sdk/ frontend/node_modules/.cache/default-development/0.pack
-.env
-.env.*
-*.env
 credentials.json
 *.key
 .credentials

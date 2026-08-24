@@ -23,7 +23,7 @@ body:
     id: workstream
     attributes:
       label: Workstream
-      options: [Architecture, Tenancy, Identity, AI, Integrations, White Label, Billing, Operations, QA/Security, Documentation/Legal]
+      options: [Architecture, Tenancy, Identity, AI, Integrations, White Label, Billing, Operations, QA / Security, Documentation/Legal]
     validations:
       required: true
   - type: dropdown

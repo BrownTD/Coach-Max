@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 
 # Configure Resend
 resend.api_key = os.environ.get("RESEND_API_KEY")
-SENDER_EMAIL = os.environ.get("SENDER_EMAIL") or "info@theboostpad.org"
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "").strip()
 
 # ==================== PLATFORM BRANDING ====================
 # Defaults are used when the platform_settings collection is empty (fresh install).
@@ -87,10 +87,6 @@ def invalidate_branding_cache():
     global _branding_cache, _branding_cache_ts
     _branding_cache = None
     _branding_cache_ts = 0
-# Force override if stale resend.dev value is still in env
-if "resend.dev" in SENDER_EMAIL:
-    SENDER_EMAIL = "info@theboostpad.org"
-    logger.warning("Overrode stale resend.dev SENDER_EMAIL with info@theboostpad.org")
 SUPER_ADMIN_EMAIL = os.environ.get("SUPER_ADMIN_EMAIL", "").lower().strip()
 NOTIFICATION_EMAIL = os.environ.get("NOTIFICATION_EMAIL", "").lower().strip()
 THINKIFIC_API_KEY = os.environ.get("THINKIFIC_API_KEY", "")
@@ -114,8 +110,8 @@ logger.info(f"App base URL: {APP_BASE_URL}")
 
 async def send_email_notification(to_email: str, subject: str, html_content: str):
     """Send email notification using Resend"""
-    if not resend.api_key:
-        logger.warning("Resend API key not configured, skipping email")
+    if not resend.api_key or not SENDER_EMAIL:
+        logger.warning("Email credentials or sender are not configured; skipping email")
         return None
     
     try:
@@ -7767,11 +7763,14 @@ Identify the main themes, count how many questions relate to each theme, provide
 
 # ==================== WEEKLY DIGEST ====================
 
-DIGEST_RECIPIENT = "info@theboostpad.org"
+DIGEST_RECIPIENT = NOTIFICATION_EMAIL
 
 async def generate_weekly_digest():
     """Generate and email a weekly Coach Max insights digest for all active cohorts."""
     logger.info("Starting weekly Coach Max digest generation...")
+    if not DIGEST_RECIPIENT:
+        logger.warning("Notification email is not configured; skipping weekly digest")
+        return
     
     cohorts = await db.cohorts.find({}, {"_id": 0}).to_list(100)
     if not cohorts:

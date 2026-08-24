@@ -78,7 +78,7 @@ The `Issue Hierarchy` workflow reads `Parent Issue` from issue-form headings or 
 | White Label | Branding, domains, terminology, organization configuration, email identity, AI persona, and administration. |
 | Billing | Subscriptions, plans, entitlements, usage tracking, invoices, overages, credits, and premium add-ons. |
 | Operations | CI/CD, deployment, jobs, monitoring, alerts, backups, restore, upgrades, rollback, offboarding, and support tooling. |
-| QA/Security | Automated tests, tenant-isolation validation, threat remediation, privacy controls, security gates, and release verification. |
+| QA / Security | Automated tests, tenant-isolation validation, threat remediation, privacy controls, security gates, and release verification. |
 | Documentation/Legal | Customer documentation, developer guidance, runbooks, contracts, licensing, DPA, SLA, and onboarding materials. |
 
 ## Release definitions
