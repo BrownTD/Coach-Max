@@ -116,6 +116,34 @@ If sensitive objects remain in pull-request refs or caches, follow GitHub's proc
 to provide the sanitized repository identity, affected-PR count, and first changed
 commit information to GitHub Support. Never publish that incident evidence.
 
+### BrownTD rewrite execution record
+
+The BrownTD-controlled rewrite was completed on 2026-08-24 using
+`git-filter-repo` 2.47.0 from a fresh mirror:
+
+- Rewrote 234 of 235 commits across six branch refs and no tags.
+- Removed the approved environment files, credential/session notes, runtime
+  uploads, learner artifacts, generated reports, and historical hard-coded test
+  session values.
+- Preserved the current `main` tree exactly; only commit identities and historical
+  content changed.
+- Temporarily disabled repository ruleset `21224290` for the force-push window and
+  verified that its complete configuration was restored exactly with enforcement
+  active immediately afterward.
+- Verified all six remote branch tips against the audited mirror.
+- Replaced the local clone and permanently removed the stale clone after the fresh
+  clone passed the tracked-artifact policy and redacted full-history scan.
+- Confirmed no prohibited historical paths remain in the fresh clone. The seven
+  remaining detector candidates are the previously reviewed non-secret assignment
+  identifiers and explanatory schema text.
+
+GitHub retains nine read-only `refs/pull/*/head` references for already-merged pull
+requests. They cannot be updated by a repository force-push. GitHub Support should
+be given repository `BrownTD/Coach-Max`, affected pull-request count `9`, and first
+changed commit `e737ab2dac277704019f4f4332af95682ad89030` so it can determine which
+server-side references and caches can be dereferenced or purged. No secret value
+is required in the public issue or support-request description.
+
 ## Public fork and clone limitation
 
 Rewriting `BrownTD/Coach-Max` cannot alter `slewis-cmd/Coach-Max`, another user's
@@ -132,9 +160,10 @@ CMX-3 may close only after all of the following are true:
   upstream credentials were never owned, copied, deployed, or reused.
 - [x] Session and magic-link invalidation is not applicable because no inherited
   database or deployment was ever used.
-- [ ] The current tree passes the artifact policy and a redacted secret scan.
-- [ ] The `BrownTD/Coach-Max` history rewrite and post-rewrite scan are complete.
+- [x] The current tree passes the artifact policy and a redacted secret scan.
+- [x] The `BrownTD/Coach-Max` history rewrite and post-rewrite scan are complete.
 - [ ] GitHub Support follow-up is complete when required for cached or PR refs.
-- [ ] Controlled forks/clones are cleaned and uncontrolled copies are documented.
+- [x] The controlled local clone is clean and uncontrolled upstream/fork copies are
+  documented as residual exposure outside BrownTD's control.
 - [ ] The final public issue comment lists only credential classes, dates,
   disposition, and private evidence references—never values.
