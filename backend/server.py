@@ -21,13 +21,19 @@ import csv
 import asyncio
 import resend
 
+try:
+    from .config import Settings
+except ImportError:  # Supports running ``uvicorn server:app`` from backend/.
+    from config import Settings
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+settings = Settings.from_environment()
 
 # MongoDB connection
-mongo_url = os.environ['MONGO_URL']
+mongo_url = settings.mongo_url
 client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+db = client[settings.db_name]
 
 # GridFS bucket for persistent file storage (survives pod redeploys)
 fs_bucket = AsyncIOMotorGridFSBucket(db)
@@ -50,8 +56,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Configure Resend
-resend.api_key = os.environ.get("RESEND_API_KEY")
-SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "").strip()
+resend.api_key = settings.resend_api_key
+SENDER_EMAIL = settings.sender_email
 
 # ==================== PLATFORM BRANDING ====================
 # Defaults are used when the platform_settings collection is empty (fresh install).
@@ -87,23 +93,11 @@ def invalidate_branding_cache():
     global _branding_cache, _branding_cache_ts
     _branding_cache = None
     _branding_cache_ts = 0
-SUPER_ADMIN_EMAIL = os.environ.get("SUPER_ADMIN_EMAIL", "").lower().strip()
-NOTIFICATION_EMAIL = os.environ.get("NOTIFICATION_EMAIL", "").lower().strip()
-THINKIFIC_API_KEY = os.environ.get("THINKIFIC_API_KEY", "")
-THINKIFIC_SUBDOMAIN = os.environ.get("THINKIFIC_SUBDOMAIN", "")
-
-# Read the external app URL from the frontend .env (Emergent configures this correctly for both preview and production)
-APP_BASE_URL = ""
-try:
-    with open("/app/frontend/.env") as _f:
-        for _line in _f:
-            if _line.startswith("REACT_APP_BACKEND_URL="):
-                APP_BASE_URL = _line.strip().split("=", 1)[1].strip('"').rstrip("/")
-                break
-except Exception:
-    pass
-if not APP_BASE_URL:
-    APP_BASE_URL = "https://cohort-feedback-hub.preview.emergentagent.com"
+SUPER_ADMIN_EMAIL = settings.super_admin_email
+NOTIFICATION_EMAIL = settings.notification_email
+THINKIFIC_API_KEY = settings.thinkific_api_key or ""
+THINKIFIC_SUBDOMAIN = settings.thinkific_subdomain
+APP_BASE_URL = settings.app_base_url
 logger.info(f"App base URL: {APP_BASE_URL}")
 
 # ==================== EMAIL HELPER ====================
@@ -279,7 +273,7 @@ async def _run_ffmpeg_extract_audio(input_path: str, output_path: str) -> Tuple[
 
 async def _whisper_transcribe_file(path: str) -> str:
     """Send a file path to Whisper. Raises on any error."""
-    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    api_key = settings.emergent_llm_key
     if not api_key:
         raise RuntimeError("EMERGENT_LLM_KEY not set")
     from emergentintegrations.llm.openai import OpenAISpeechToText
@@ -2425,7 +2419,7 @@ def _vision_extract_pdf_text(file_bytes: bytes, max_pages: int = 10) -> str:
     without a local Tesseract binary. Runs synchronously via ``asyncio.run`` so
     it plugs into the existing sync extractor cascade without changing callers.
     """
-    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    api_key = settings.emergent_llm_key
     if not api_key:
         logger.warning("Vision-fallback PDF extraction: EMERGENT_LLM_KEY not set; skipping")
         return ""
@@ -5089,7 +5083,7 @@ async def ask_tutor(request: Request, user: dict = Depends(get_current_user)):
         exclude_submission_id=submission.get("submission_id"),
     )
 
-    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    api_key = settings.emergent_llm_key
     if not api_key:
         raise HTTPException(status_code=500, detail="AI service not configured")
 
@@ -5257,7 +5251,7 @@ async def support_chat(request: Request, user: dict = Depends(get_current_user))
     if not message:
         raise HTTPException(status_code=400, detail="Message is required")
 
-    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    api_key = settings.emergent_llm_key
     if not api_key:
         raise HTTPException(status_code=500, detail="AI service not configured")
 
@@ -5756,7 +5750,7 @@ async def _run_auto_ai_review_for_submission(
             exclude_submission_id=submission_id,
         )
 
-        api_key = os.environ.get("EMERGENT_LLM_KEY")
+        api_key = settings.emergent_llm_key
         if not api_key:
             logger.error("Auto review: EMERGENT_LLM_KEY not set")
             return
@@ -6218,7 +6212,7 @@ async def submit_on_behalf(
                 except Exception:
                     pass
             
-            api_key = os.environ.get("EMERGENT_LLM_KEY")
+            api_key = settings.emergent_llm_key
             if not api_key:
                 logger.error("Auto review: EMERGENT_LLM_KEY not set")
                 return
@@ -6930,7 +6924,7 @@ async def review_submission(submission_id: str, user: dict = Depends(require_ins
             pass
     
     # Call GPT-5.2 for review
-    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    api_key = settings.emergent_llm_key
     if not api_key:
         raise HTTPException(status_code=500, detail="AI service not configured")
     
@@ -7484,7 +7478,7 @@ async def generate_feedback_audio(submission_id: str, user: dict = Depends(get_c
         # Stale cache — file is gone after redeploy. Drop the stale record and regenerate below.
         await db.audio_cache.delete_one({"audio_key": audio_key})
 
-    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    api_key = settings.emergent_llm_key
     if not api_key:
         raise HTTPException(status_code=500, detail="AI service not configured")
 
@@ -7527,7 +7521,7 @@ async def generate_chat_audio(request: Request, user: dict = Depends(get_current
     if not text:
         raise HTTPException(status_code=400, detail="text is required")
 
-    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    api_key = settings.emergent_llm_key
     if not api_key:
         raise HTTPException(status_code=500, detail="AI service not configured")
 
@@ -7705,7 +7699,7 @@ async def generate_coach_max_insights(cohort_id: str, request: Request, user: di
 
     questions_text = "\n".join([f"- {c['message']}" for c in chats])
 
-    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    api_key = settings.emergent_llm_key
     if not api_key:
         raise HTTPException(status_code=500, detail="AI service not configured")
 
@@ -7777,7 +7771,7 @@ async def generate_weekly_digest():
         logger.info("No cohorts found, skipping digest.")
         return
 
-    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    api_key = settings.emergent_llm_key
     week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     
     cohort_sections = []
@@ -7940,9 +7934,7 @@ async def health():
     has_key = bool(resend.api_key)
     return {
         "status": "healthy",
-        "email_sender": SENDER_EMAIL,
-        "resend_key_prefix": (resend.api_key[:8] + "...") if resend.api_key else "NOT SET",
-        "email_ready": has_key and bool(SENDER_EMAIL)
+        "email_ready": has_key and bool(SENDER_EMAIL),
     }
 
 @api_router.get("/debug/submission/{submission_id}")
@@ -7965,12 +7957,10 @@ async def debug_submission(submission_id: str):
 async def email_diagnostic(user: dict = Depends(require_instructor)):
     """Check email configuration — instructor/admin only"""
     has_key = bool(resend.api_key)
-    key_prefix = resend.api_key[:8] + "..." if resend.api_key else "NOT SET"
     return {
-        "sender_email": SENDER_EMAIL,
-        "notification_email": NOTIFICATION_EMAIL,
         "resend_api_key_set": has_key,
-        "resend_api_key_prefix": key_prefix,
+        "sender_email_set": bool(SENDER_EMAIL),
+        "notification_email_set": bool(NOTIFICATION_EMAIL),
         "status": "ok" if has_key and SENDER_EMAIL else "misconfigured"
     }
 
@@ -8292,7 +8282,7 @@ app.include_router(api_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=list(settings.cors_origins),
     allow_methods=["*"],
     allow_headers=["*"],
 )

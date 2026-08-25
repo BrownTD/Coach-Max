@@ -1,0 +1,49 @@
+name: Infisical Smoke Test
+
+"on":
+  workflow_dispatch:
+    inputs:
+      infisical_environment:
+        description: Infisical environment slug to validate
+        required: true
+        type: choice
+        default: dev
+        options:
+          - dev
+          - staging
+          - prod
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  validate-secret-injection:
+    name: validate-${{ inputs.infisical_environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.infisical_environment }}
+    env:
+      APP_ENV: ${{ inputs.infisical_environment == 'dev' && 'development' || inputs.infisical_environment == 'prod' && 'production' || 'staging' }}
+    steps:
+      - name: Check out trusted default-branch code
+        uses: actions/checkout@v5
+
+      - name: Require non-secret Infisical identifiers
+        env:
+          INFISICAL_IDENTITY_ID: ${{ vars.INFISICAL_IDENTITY_ID }}
+          INFISICAL_PROJECT_SLUG: ${{ vars.INFISICAL_PROJECT_SLUG }}
+        run: |
+          set -euo pipefail
+          test -n "$INFISICAL_IDENTITY_ID" || { echo "Missing environment variable INFISICAL_IDENTITY_ID" >&2; exit 1; }
+          test -n "$INFISICAL_PROJECT_SLUG" || { echo "Missing environment variable INFISICAL_PROJECT_SLUG" >&2; exit 1; }
+
+      - name: Inject runtime configuration from Infisical with GitHub OIDC
+        uses: Infisical/secrets-action@8a06c1bdcd5b8635d510c52d4b57a92c1ccef785 # v1.0.9
+        with:
+          method: oidc
+          identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
+          project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
+          env-slug: ${{ inputs.infisical_environment }}
+
+      - name: Validate injected contract without displaying values
+        run: python3 scripts/validate-runtime-config.py
